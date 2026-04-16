@@ -1,0 +1,415 @@
+{% comment %}
+  ============================================================
+  Section: Gift Guide Banner
+  File: sections/gift-guide-banner.liquid
+  Description: Hero banner with illustration, editable text,
+               animated CTA buttons, and a marquee ticker strip.
+               All red-rectangle text is editable via customizer.
+  ============================================================
+{% endcomment %}
+
+<section
+  id="gift-guide-banner"
+  class="gift-banner"
+  style="
+    --banner-bg: {{ section.settings.background_color }};
+    --banner-btn-bg: {{ section.settings.button_color }};
+    --banner-btn-text: {{ section.settings.button_text_color }};
+  "
+>
+  <!-- ── NAV BAR ───────────────────────────────────────────── -->
+  <header class="gift-banner__nav">
+    <span class="gift-banner__logo">{{ section.settings.brand_name }}</span>
+
+    <p class="gift-banner__tagline">{{ section.settings.nav_tagline }}</p>
+
+    <a
+      href="{{ section.settings.nav_cta_url }}"
+      class="gift-banner__nav-cta gift-banner__btn--outline"
+    >
+      {{ section.settings.nav_cta_label }}
+      <span class="gift-banner__arrow" aria-hidden="true">&#8594;</span>
+    </a>
+  </header>
+
+  <!-- ── HERO AREA ─────────────────────────────────────────── -->
+  <div class="gift-banner__hero">
+
+    <!-- Sketch illustration (full-width background) -->
+    <div class="gift-banner__illustration" aria-hidden="true">
+      {% if section.settings.hero_image != blank %}
+        <img
+          src="{{ section.settings.hero_image | img_url: 'master' }}"
+          alt=""
+          loading="eager"
+          width="1052"
+          height="400"
+        >
+      {% else %}
+        {{- 'Frame.svg' | asset_url | img_tag: '', '', 'class: gift-banner__svg-img' -}}
+      {% endif %}
+    </div>
+
+    <!-- Text overlay (left column) -->
+    <div class="gift-banner__content">
+      <h1 class="gift-banner__heading">{{ section.settings.heading }}</h1>
+
+      <p class="gift-banner__body">{{ section.settings.subheading }}</p>
+
+      <a
+        href="{{ section.settings.cta_url }}"
+        class="gift-banner__cta gift-banner__btn--solid"
+      >
+        {{ section.settings.cta_label }}
+        <span class="gift-banner__arrow" aria-hidden="true">&#8594;</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── MARQUEE STRIP ─────────────────────────────────────── -->
+  <div class="gift-banner__ticker" aria-label="{{ section.settings.ticker_text }}">
+    <div class="gift-banner__ticker-track" aria-hidden="true">
+      {%- assign ticker_repeat = 6 -%}
+      {%- for i in (1..ticker_repeat) -%}
+        <span>{{ section.settings.ticker_text }}</span>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+<!-- ── STYLES ───────────────────────────────────────────────── -->
+<style>
+  /* ── Reset & Root ──────────────────────────────────────── */
+  #gift-guide-banner *,
+  #gift-guide-banner *::before,
+  #gift-guide-banner *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .gift-banner {
+    background: var(--banner-bg, #f5f5f0);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  /* ── NAV ────────────────────────────────────────────────── */
+  .gift-banner__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    background: #fff;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  .gift-banner__logo {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .gift-banner__tagline {
+    font-size: 13px;
+    color: #555;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── HERO ───────────────────────────────────────────────── */
+  .gift-banner__hero {
+    position: relative;
+    min-height: 520px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  /* Illustration fills the right portion */
+  .gift-banner__illustration {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .gift-banner__illustration img,
+  .gift-banner__svg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    opacity: 0.9;
+  }
+
+  /* Text content floats over the left side */
+  .gift-banner__content {
+    position: relative;
+    z-index: 2;
+    padding: 48px 40px 56px;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    /* subtle white fade so text is readable over illustration */
+    background: linear-gradient(to right, rgba(245,245,240,0.95) 70%, transparent);
+  }
+
+  .gift-banner__heading {
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: #111;
+  }
+
+  .gift-banner__body {
+    font-size: 14px;
+    line-height: 1.65;
+    color: #444;
+    max-width: 340px;
+  }
+
+  /* ── BUTTONS ────────────────────────────────────────────── */
+
+  /* Shared button base */
+  .gift-banner__btn--solid,
+  .gift-banner__btn--outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 22px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition:
+      transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.25s ease,
+      background 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Arrow slide-in animation */
+  .gift-banner__arrow {
+    display: inline-block;
+    transform: translateX(-4px);
+    opacity: 0.5;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .gift-banner__btn--solid:hover .gift-banner__arrow,
+  .gift-banner__btn--outline:hover .gift-banner__arrow {
+    transform: translateX(4px);
+    opacity: 1;
+  }
+
+  /* Solid black CTA (main) */
+  .gift-banner__btn--solid {
+    background: #111;
+    color: #fff;
+    align-self: flex-start;
+  }
+
+  .gift-banner__btn--solid:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  }
+
+  .gift-banner__btn--solid:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  /* Yellow outlined nav CTA */
+  .gift-banner__btn--outline {
+    background: var(--banner-btn-bg, #f5d000);
+    color: var(--banner-btn-text, #111);
+    border: 2px solid transparent;
+  }
+
+  .gift-banner__btn--outline:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    filter: brightness(1.05);
+  }
+
+  .gift-banner__btn--outline:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  /* ── TICKER / MARQUEE ───────────────────────────────────── */
+  .gift-banner__ticker {
+    background: #f5f5f0;
+    border-top: 1px solid #ddd;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 10px 0;
+  }
+
+  .gift-banner__ticker-track {
+    display: inline-flex;
+    gap: 60px;
+    animation: gift-ticker-scroll 28s linear infinite;
+  }
+
+  .gift-banner__ticker-track span {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #444;
+  }
+
+  @keyframes gift-ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* ── MOBILE ─────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .gift-banner__nav {
+      padding: 12px 16px;
+    }
+
+    .gift-banner__tagline {
+      display: none;
+    }
+
+    .gift-banner__hero {
+      flex-direction: column;
+      min-height: unset;
+    }
+
+    /* On mobile the illustration sits above the text */
+    .gift-banner__illustration {
+      position: relative;
+      height: 260px;
+      inset: auto;
+    }
+
+    .gift-banner__illustration img {
+      object-position: center center;
+    }
+
+    .gift-banner__content {
+      background: #f5f5f0;
+      max-width: 100%;
+      padding: 32px 20px 40px;
+      text-align: center;
+      align-items: center;
+    }
+
+    .gift-banner__body {
+      max-width: 100%;
+    }
+  }
+</style>
+
+<!-- ── SCHEMA ────────────────────────────────────────────────── -->
+{% schema %}
+{
+  "name": "Gift Guide Banner",
+  "tag": "section",
+  "class": "gift-guide-banner-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Brand / Nav"
+    },
+    {
+      "type": "text",
+      "id": "brand_name",
+      "label": "Brand name",
+      "default": "TISSO VISON"
+    },
+    {
+      "type": "text",
+      "id": "nav_tagline",
+      "label": "Nav tagline",
+      "default": "Find the ideal gift for your loved ones."
+    },
+    {
+      "type": "text",
+      "id": "nav_cta_label",
+      "label": "Nav CTA label",
+      "default": "CHOOSE GIFT"
+    },
+    {
+      "type": "url",
+      "id": "nav_cta_url",
+      "label": "Nav CTA link"
+    },
+    {
+      "type": "header",
+      "content": "Hero Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "The Gift Guide"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading / body text",
+      "default": "Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "CTA button label",
+      "default": "SHOP NOW"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "CTA button link"
+    },
+    {
+      "type": "image_picker",
+      "id": "hero_image",
+      "label": "Hero illustration image (optional override)"
+    },
+    {
+      "type": "header",
+      "content": "Ticker Strip"
+    },
+    {
+      "type": "text",
+      "id": "ticker_text",
+      "label": "Ticker text",
+      "default": "SUSTAINABLE, ETHICALLY MADE CLOTHES IN SIZES XXS TO 6XL"
+    },
+    {
+      "type": "header",
+      "content": "Colours"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Section background",
+      "default": "#f5f5f0"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Outline button background",
+      "default": "#f5d000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Outline button text",
+      "default": "#111111"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gift Guide Banner"
+    }
+  ]
+}
+{% endschema %}
