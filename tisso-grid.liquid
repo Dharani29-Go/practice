@@ -1,507 +1,596 @@
 {% comment %}
-  ============================================================
-  TISSO VISON - Product Grid Section
-  File: sections/tisso-grid.liquid
-  Description: 3×2 photo grid. Each cell shows a product photo
-               with a "+" hotspot button. Clicking the button
-               opens a popup with product name, price,
-               description, variant selectors, and Add to Cart.
-               Special rule: if Color=Black AND Size=Medium are
-               both selected, "Soft Winter Jacket" is also added.
-  ============================================================
+================================================================================
+  TISSO VISON — Product Grid + Popup Section
+  File   : sections/tisso-grid.liquid
+  Purpose: 3×2 (desktop) / 2-column (mobile) photo grid.
+           Each cell has a "+" hotspot button that opens a popup with:
+             • Product image, name, price, description
+             • Variant selectors (chip buttons + dropdown) built from real data
+             • Functional "Add to Cart" via Shopify AJAX API (no page reload)
+  Special rule: if Color = Black AND Size = Medium are both selected,
+                the "Soft Winter Jacket" is also auto-added to cart.
+  No jQuery — 100 % vanilla JavaScript.
+================================================================================
 {% endcomment %}
 
-<section class="tisso-grid" id="tisso-grid-{{ section.id }}">
+{%- comment %} ── SECTION HTML ── {% endcomment %}
+<section
+  class="tv-grid"
+  id="tv-grid-{{ section.id }}"
+  aria-label="Product Grid"
+>
 
-  <!-- Section heading -->
-  <div class="tisso-grid__header">
-    <h2 class="tisso-grid__title">{{ section.settings.section_title }}</h2>
+  {%- comment %} Section heading {% endcomment %}
+  <div class="tv-grid__header">
+    <h2 class="tv-grid__title">{{ section.settings.section_title }}</h2>
   </div>
 
-  <!-- 3-column photo grid -->
-  <div class="tisso-grid__wrapper">
-    {% for block in section.blocks %}
-      {% assign product = all_products[block.settings.product] %}
-      {% if product != blank %}
-        <div class="tisso-grid__cell" {{ block.shopify_attributes }}>
-          <!-- Product image fills the cell -->
+  {%- comment %} 3-column grid — up to 6 product blocks {% endcomment %}
+  <div class="tv-grid__wrapper" role="list">
+
+    {%- for block in section.blocks -%}
+      {%- assign product = all_products[block.settings.product] -%}
+
+      {%- if product != blank -%}
+
+        <div
+          class="tv-grid__cell"
+          role="listitem"
+          {{ block.shopify_attributes }}
+        >
+          {%- comment %} Product photo {% endcomment %}
           <img
-            class="tisso-grid__img"
-            src="{{ product.featured_image | image_url: width: 600 }}"
+            class="tv-grid__img"
+            src="{{ product.featured_image | image_url: width: 700 }}"
             alt="{{ product.title | escape }}"
             loading="lazy"
+            width="700"
           >
-          <!-- Hotspot "+" button -->
+
+          {%- comment %} "+" hotspot trigger button {% endcomment %}
           <button
-            class="tisso-grid__hotspot"
-            aria-label="View {{ product.title | escape }}"
+            class="tv-grid__hotspot"
+            type="button"
+            aria-label="Quick view {{ product.title | escape }}"
             data-product-id="{{ product.id }}"
-            data-product-handle="{{ product.handle }}"
           >+</button>
 
-          <!-- Hidden product data read by JS -->
-          <script type="application/json" data-product-json="{{ product.id }}">
+          {%- comment %}
+            Inline JSON — consumed by the popup JS below.
+            Using application/json type so the browser never executes it.
+          {% endcomment %}
+          <script
+            type="application/json"
+            class="tv-product-data"
+            data-product-id="{{ product.id }}"
+          >
             {
-              "id": {{ product.id }},
-              "title": {{ product.title | json }},
-              "price": "{{ product.price | money }}",
-              "description": {{ product.description | strip_html | truncate: 120 | json }},
-              "image": "{{ product.featured_image | image_url: width: 300 }}",
-              "variants": [
-                {% for variant in product.variants %}
-                {
-                  "id": {{ variant.id }},
-                  "title": {{ variant.title | json }},
-                  "available": {{ variant.available }},
-                  "options": {{ variant.options | json }}
-                }{% unless forloop.last %},{% endunless %}
-                {% endfor %}
-              ],
+              "id"         : {{ product.id }},
+              "title"      : {{ product.title | json }},
+              "price"      : "{{ product.price | money }}",
+              "description": {{ product.description | strip_html | truncate: 150 | json }},
+              "image"      : "{{ product.featured_image | image_url: width: 320 }}",
               "options": [
-                {% for option in product.options_with_values %}
-                {
-                  "name": {{ option.name | json }},
-                  "values": {{ option.values | json }}
-                }{% unless forloop.last %},{% endunless %}
-                {% endfor %}
+                {%- for option in product.options_with_values -%}
+                  {
+                    "name"  : {{ option.name | json }},
+                    "values": {{ option.values | json }}
+                  }{%- unless forloop.last -%},{%- endunless -%}
+                {%- endfor -%}
+              ],
+              "variants": [
+                {%- for variant in product.variants -%}
+                  {
+                    "id"       : {{ variant.id }},
+                    "title"    : {{ variant.title | json }},
+                    "available": {{ variant.available }},
+                    "options"  : {{ variant.options | json }}
+                  }{%- unless forloop.last -%},{%- endunless -%}
+                {%- endfor -%}
               ]
             }
           </script>
-        </div>
-      {% endif %}
-    {% endfor %}
-  </div>
+
+        </div><!-- /.tv-grid__cell -->
+
+      {%- endif -%}
+    {%- endfor -%}
+
+  </div><!-- /.tv-grid__wrapper -->
 
 </section>
 
-<!-- ── POPUP OVERLAY ── -->
-<div class="tisso-popup-overlay" id="tisso-popup-overlay" role="dialog" aria-modal="true" aria-label="Product quick view" hidden>
-  <div class="tisso-popup">
 
-    <!-- Close button -->
-    <button class="tisso-popup__close" id="tisso-popup-close" aria-label="Close popup">&times;</button>
+{%- comment %} ── POPUP OVERLAY (single instance, reused for every product) ── {% endcomment %}
+<div
+  class="tv-popup-overlay"
+  id="tv-popup-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Product quick view"
+  aria-hidden="true"
+  hidden
+>
+  <div class="tv-popup" role="document">
 
-    <!-- Product summary row -->
-    <div class="tisso-popup__summary">
-      <img class="tisso-popup__img" id="popup-img" src="" alt="">
-      <div class="tisso-popup__meta">
-        <h3 class="tisso-popup__title" id="popup-title"></h3>
-        <p class="tisso-popup__price" id="popup-price"></p>
-        <p class="tisso-popup__desc" id="popup-desc"></p>
+    {%- comment %} Close button {% endcomment %}
+    <button
+      class="tv-popup__close"
+      id="tv-popup-close"
+      type="button"
+      aria-label="Close popup"
+    >&times;</button>
+
+    {%- comment %} Product summary row: image + meta {% endcomment %}
+    <div class="tv-popup__summary">
+      <img class="tv-popup__img" id="tv-popup-img" src="" alt="">
+      <div class="tv-popup__meta">
+        <h3 class="tv-popup__title"   id="tv-popup-title"  ></h3>
+        <p  class="tv-popup__price"   id="tv-popup-price"  ></p>
+        <p  class="tv-popup__desc"    id="tv-popup-desc"   ></p>
       </div>
     </div>
 
-    <!-- Dynamic variant selectors injected by JS -->
-    <div class="tisso-popup__variants" id="popup-variants"></div>
+    {%- comment %} Variant selectors — injected by JS {% endcomment %}
+    <div class="tv-popup__variants" id="tv-popup-variants"></div>
 
-    <!-- Add to cart -->
-    <button class="tisso-popup__atc tisso-btn--animate" id="popup-atc">
-      ADD TO CART <span class="tisso-arrow">&#8594;</span>
+    {%- comment %} Add to Cart button {% endcomment %}
+    <button
+      class="tv-btn tv-btn--black tv-popup__atc"
+      id="tv-popup-atc"
+      type="button"
+    >
+      ADD TO CART
+      <span class="tv-btn__arrow" aria-hidden="true">&#8594;</span>
     </button>
 
-    <!-- Feedback message -->
-    <p class="tisso-popup__feedback" id="popup-feedback" hidden></p>
+    {%- comment %} Success / error feedback message {% endcomment %}
+    <p class="tv-popup__feedback" id="tv-popup-feedback" role="status" hidden></p>
 
-  </div>
-</div>
+  </div><!-- /.tv-popup -->
+</div><!-- /.tv-popup-overlay -->
 
-{% comment %} ── STYLES ── {% endcomment %}
+
+{%- comment %} ════════════════ STYLES ════════════════ {% endcomment %}
 <style>
-  /* ---- Variables ---- */
-  .tisso-grid, .tisso-popup-overlay {
-    --font-heading: 'Georgia', serif;
-    --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    --color-black: #000;
-    --color-white: #fff;
-    --color-border: #d8d8d8;
-    --color-selected: #000;
-    --transition-speed: 0.3s;
+  /* ─── CSS custom properties ─── */
+  .tv-grid,
+  .tv-popup-overlay {
+    --tv-font-serif  : 'Georgia', 'Times New Roman', serif;
+    --tv-font-sans   : 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --tv-black       : #000000;
+    --tv-white       : #ffffff;
+    --tv-border      : #d8d8d8;
+    --tv-speed       : 0.26s;
+    --tv-radius      : 2px;
   }
 
-  /* ---- Grid section ---- */
-  .tisso-grid {
-    padding: 60px 40px 80px;
-    background: var(--color-white);
-    font-family: var(--font-body);
+  /* ─── Grid section ─── */
+  .tv-grid {
+    padding     : 60px 40px 80px;
+    background  : var(--tv-white);
+    font-family : var(--tv-font-sans);
   }
 
-  .tisso-grid__header {
-    margin-bottom: 32px;
+  .tv-grid__header {
+    margin-bottom: 30px;
   }
 
-  .tisso-grid__title {
-    font-family: var(--font-heading);
-    font-size: clamp(1.4rem, 3vw, 2rem);
-    font-weight: 400;
-    margin: 0;
-    color: var(--color-black);
+  .tv-grid__title {
+    font-family : var(--tv-font-serif);
+    font-size   : clamp(1.4rem, 3vw, 2rem);
+    font-weight : 400;
+    margin      : 0;
+    color       : var(--tv-black);
   }
 
   /* 3-column grid */
-  .tisso-grid__wrapper {
-    display: grid;
+  .tv-grid__wrapper {
+    display              : grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap                  : 8px;
   }
 
-  /* Each grid cell */
-  .tisso-grid__cell {
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 3 / 4; /* portrait ratio */
+  /* Individual cell */
+  .tv-grid__cell {
+    position  : relative;
+    overflow  : hidden;
+    aspect-ratio: 3 / 4;  /* portrait crop */
     background: #eee;
   }
 
-  .tisso-grid__img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.4s ease;
+  .tv-grid__img {
+    width           : 100%;
+    height          : 100%;
+    object-fit      : cover;
+    display         : block;
+    transition      : transform 0.4s ease;
   }
-  .tisso-grid__cell:hover .tisso-grid__img {
-    transform: scale(1.04); /* subtle zoom on hover */
+  .tv-grid__cell:hover .tv-grid__img {
+    transform: scale(1.04);
   }
 
   /* "+" hotspot button */
-  .tisso-grid__hotspot {
-    position: absolute;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.92);
-    border: 1.5px solid #aaa;
-    font-size: 1.3rem;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background var(--transition-speed), transform var(--transition-speed);
-    z-index: 2;
+  .tv-grid__hotspot {
+    position        : absolute;
+    bottom          : 16px;
+    left            : 50%;
+    transform       : translateX(-50%);
+    width           : 34px;
+    height          : 34px;
+    border-radius   : 50%;
+    background      : rgba(255, 255, 255, 0.92);
+    border          : 1.5px solid #aaa;
+    font-size       : 1.4rem;
+    line-height     : 1;
+    cursor          : pointer;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    z-index         : 2;
+    transition      : background var(--tv-speed),
+                      transform  var(--tv-speed);
   }
-  .tisso-grid__hotspot:hover {
-    background: var(--color-white);
-    transform: translateX(-50%) scale(1.15);
+  .tv-grid__hotspot:hover {
+    background: var(--tv-white);
+    transform : translateX(-50%) scale(1.16);
   }
 
-  /* ---- Popup overlay ---- */
-  .tisso-popup-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    opacity: 0;
-    transition: opacity 0.25s ease;
+  /* ─── Popup overlay ─── */
+  .tv-popup-overlay {
+    position  : fixed;
+    inset     : 0;
+    background: rgba(0, 0, 0, 0.46);
+    z-index   : 9000;
+    display   : flex;
+    align-items     : center;
+    justify-content : center;
+    padding   : 20px;
+    opacity   : 0;
+    transition: opacity var(--tv-speed) ease;
   }
-  .tisso-popup-overlay.is-visible {
+  .tv-popup-overlay.is-open {
     opacity: 1;
   }
 
   /* Popup card */
-  .tisso-popup {
-    background: var(--color-white);
-    width: 100%;
-    max-width: 380px;
-    padding: 28px;
-    position: relative;
-    border-radius: 2px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-    transform: translateY(24px);
-    transition: transform 0.25s ease;
+  .tv-popup {
+    background  : var(--tv-white);
+    width       : 100%;
+    max-width   : 390px;
+    padding     : 28px;
+    position    : relative;
+    border-radius: var(--tv-radius);
+    box-shadow  : 0 10px 48px rgba(0, 0, 0, 0.20);
+    transform   : translateY(28px);
+    transition  : transform var(--tv-speed) ease;
+    font-family : var(--tv-font-sans);
   }
-  .tisso-popup-overlay.is-visible .tisso-popup {
+  .tv-popup-overlay.is-open .tv-popup {
     transform: translateY(0);
   }
 
-  /* Close "×" */
-  .tisso-popup__close {
-    position: absolute;
-    top: 14px; right: 16px;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #555;
+  /* Close button */
+  .tv-popup__close {
+    position   : absolute;
+    top        : 14px;
+    right      : 16px;
+    background : none;
+    border     : none;
+    font-size  : 1.6rem;
     line-height: 1;
-    padding: 4px;
+    cursor     : pointer;
+    color      : #666;
+    padding    : 4px 6px;
+    transition : color var(--tv-speed);
   }
-  .tisso-popup__close:hover { color: var(--color-black); }
+  .tv-popup__close:hover { color: var(--tv-black); }
 
   /* Summary row */
-  .tisso-popup__summary {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 20px;
+  .tv-popup__summary {
+    display      : flex;
+    gap          : 16px;
+    margin-bottom: 22px;
   }
 
-  .tisso-popup__img {
-    width: 90px;
-    height: 110px;
-    object-fit: cover;
-    flex-shrink: 0;
-    border-radius: 1px;
+  .tv-popup__img {
+    width       : 90px;
+    height      : 110px;
+    object-fit  : cover;
+    flex-shrink : 0;
+    border-radius: var(--tv-radius);
   }
 
-  .tisso-popup__meta { flex: 1; }
+  .tv-popup__meta   { flex: 1; min-width: 0; }
 
-  .tisso-popup__title {
-    font-family: var(--font-heading);
-    font-size: 1rem;
+  .tv-popup__title {
+    font-family : var(--tv-font-serif);
+    font-size   : 1rem;
+    font-weight : 600;
+    margin      : 0 0 6px;
+    color       : var(--tv-black);
+  }
+
+  .tv-popup__price {
+    font-size  : 0.95rem;
     font-weight: 600;
-    margin: 0 0 6px;
+    margin     : 0 0 8px;
+    color      : var(--tv-black);
   }
 
-  .tisso-popup__price {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin: 0 0 8px;
+  .tv-popup__desc {
+    font-size  : 0.79rem;
+    line-height: 1.55;
+    color      : #666;
+    margin     : 0;
   }
 
-  .tisso-popup__desc {
-    font-size: 0.8rem;
-    line-height: 1.5;
-    color: #555;
-    margin: 0;
-  }
-
-  /* Variant area */
-  .tisso-popup__variants {
-    margin-bottom: 20px;
-    display: flex;
+  /* Variant container */
+  .tv-popup__variants {
+    display       : flex;
     flex-direction: column;
-    gap: 16px;
+    gap           : 18px;
+    margin-bottom : 20px;
   }
 
-  /* Option group label */
-  .tisso-option__label {
-    font-size: 0.8rem;
+  /* Option group */
+  .tv-option__group { display: flex; flex-direction: column; gap: 8px; }
+
+  .tv-option__label {
+    font-size  : 0.78rem;
     font-weight: 600;
-    margin-bottom: 8px;
-    color: #333;
+    color      : #333;
+    letter-spacing: 0.03em;
   }
 
-  /* Inline chip buttons (for Color etc.) */
-  .tisso-option__chips {
-    display: flex;
+  /* Chip row (used for Color) */
+  .tv-option__chips {
+    display  : flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap      : 6px;
   }
 
-  .tisso-chip {
-    padding: 8px 18px;
-    border: 1.5px solid var(--color-border);
-    background: var(--color-white);
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: border-color var(--transition-speed), background var(--transition-speed);
+  .tv-chip {
+    padding       : 8px 18px;
+    border        : 1.5px solid var(--tv-border);
+    background    : var(--tv-white);
+    font-size     : 0.8rem;
+    font-family   : var(--tv-font-sans);
+    cursor        : pointer;
+    transition    : border-color var(--tv-speed),
+                    background   var(--tv-speed),
+                    color        var(--tv-speed);
+    border-radius : var(--tv-radius);
   }
-  .tisso-chip.is-selected {
-    border-color: var(--color-black);
-    background: var(--color-black);
-    color: var(--color-white);
+  .tv-chip.is-selected {
+    border-color: var(--tv-black);
+    background  : var(--tv-black);
+    color       : var(--tv-white);
   }
-  .tisso-chip:hover:not(.is-selected) {
-    border-color: #888;
-  }
+  .tv-chip:hover:not(.is-selected) { border-color: #888; }
 
-  /* Dropdown (for Size etc.) */
-  .tisso-option__select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1.5px solid var(--color-border);
-    background: var(--color-white);
-    font-size: 0.85rem;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23333' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
+  /* Dropdown (used for Size) */
+  .tv-option__select {
+    width             : 100%;
+    padding           : 10px 40px 10px 14px;
+    border            : 1.5px solid var(--tv-border);
+    background-color  : var(--tv-white);
+    background-image  : url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23333' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat : no-repeat;
     background-position: right 14px center;
-    cursor: pointer;
+    font-family       : var(--tv-font-sans);
+    font-size         : 0.85rem;
+    color             : #333;
+    appearance        : none;
+    -webkit-appearance: none;
+    cursor            : pointer;
+    border-radius     : var(--tv-radius);
   }
 
-  /* Add to cart button */
-  .tisso-popup__atc {
-    width: 100%;
-    padding: 14px;
-    background: var(--color-black);
-    color: var(--color-white);
-    font-size: 0.85rem;
-    font-weight: 700;
+  /* ─── Shared button styles (reused from banner) ─── */
+  .tv-btn {
+    display       : inline-flex;
+    align-items   : center;
+    gap           : 10px;
+    padding       : 11px 20px;
+    font-family   : var(--tv-font-sans);
+    font-size     : 0.8rem;
+    font-weight   : 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
+    text-decoration: none;
+    border        : none;
+    cursor        : pointer;
+    transition    : background-color var(--tv-speed) ease,
+                    color            var(--tv-speed) ease;
+  }
+  .tv-btn__arrow {
+    display   : inline-block;
+    transition: transform var(--tv-speed) ease;
+  }
+  .tv-btn:hover .tv-btn__arrow { transform: translateX(5px); }
+
+  .tv-btn--black {
+    background-color: var(--tv-black);
+    color           : var(--tv-white);
+  }
+  .tv-btn--black:hover    { background-color: #222; }
+  .tv-btn--black:disabled {
+    background-color: #888;
+    cursor          : not-allowed;
+  }
+
+  /* Add to cart — full width inside popup */
+  .tv-popup__atc {
+    width          : 100%;
     justify-content: center;
-    gap: 12px;
-    transition: background var(--transition-speed);
-    font-family: var(--font-body);
+    padding        : 14px;
+    font-size      : 0.85rem;
+    letter-spacing : 0.12em;
   }
-  .tisso-popup__atc:hover { background: #222; }
-  .tisso-popup__atc .tisso-arrow {
-    display: inline-block;
-    transition: transform var(--transition-speed);
-  }
-  .tisso-popup__atc:hover .tisso-arrow { transform: translateX(6px); }
 
-  /* Feedback */
-  .tisso-popup__feedback {
-    margin-top: 10px;
-    font-size: 0.8rem;
+  /* Feedback message */
+  .tv-popup__feedback {
+    margin    : 10px 0 0;
+    font-size : 0.8rem;
     text-align: center;
-    color: green;
   }
 
-  /* ---- Mobile ---- */
+  /* ─── Mobile (≤ 768px) ─── */
   @media (max-width: 768px) {
-    .tisso-grid {
+    .tv-grid {
       padding: 40px 16px 60px;
     }
-    .tisso-grid__wrapper {
+    /* 2-column grid on mobile */
+    .tv-grid__wrapper {
       grid-template-columns: repeat(2, 1fr);
       gap: 6px;
     }
-    .tisso-popup {
+    .tv-popup {
       max-width: 100%;
+      padding  : 22px 18px;
     }
   }
 </style>
 
-{% comment %} ── JAVASCRIPT ── {% endcomment %}
+
+{%- comment %} ════════════════ JAVASCRIPT ════════════════ {% endcomment %}
 <script>
 (function () {
   'use strict';
 
-  /* -------------------------------------------------------
+  /* ──────────────────────────────────────────────────
      CONFIG
-     Handle of the "Soft Winter Jacket" product that is
-     auto-added when Color=Black AND Size=Medium is chosen.
-  ------------------------------------------------------- */
-  var SPECIAL_JACKET_HANDLE = 'soft-winter-jacket';
+     Set this to the handle of the product that should
+     be auto-added when Color=Black AND Size=Medium.
+     Must match the Shopify product URL slug exactly.
+  ────────────────────────────────────────────────── */
+  var JACKET_HANDLE = 'dark-winter-jacket';
 
-  /* DOM references */
-  var overlay    = document.getElementById('tisso-popup-overlay');
-  var closeBtn   = document.getElementById('tisso-popup-close');
-  var popupImg   = document.getElementById('popup-img');
-  var popupTitle = document.getElementById('popup-title');
-  var popupPrice = document.getElementById('popup-price');
-  var popupDesc  = document.getElementById('popup-desc');
-  var variantsEl = document.getElementById('popup-variants');
-  var atcBtn     = document.getElementById('popup-atc');
-  var feedback   = document.getElementById('popup-feedback');
+  /* ── DOM references ── */
+  var overlay      = document.getElementById('tv-popup-overlay');
+  var closeBtn     = document.getElementById('tv-popup-close');
+  var popupImg     = document.getElementById('tv-popup-img');
+  var popupTitle   = document.getElementById('tv-popup-title');
+  var popupPrice   = document.getElementById('tv-popup-price');
+  var popupDesc    = document.getElementById('tv-popup-desc');
+  var variantsEl   = document.getElementById('tv-popup-variants');
+  var atcBtn       = document.getElementById('tv-popup-atc');
+  var feedbackEl   = document.getElementById('tv-popup-feedback');
 
-  /* State: currently shown product data */
-  var currentProduct = null;
-  /* Maps option name → selected value */
-  var selectedOptions = {};
+  /* ── State ── */
+  var currentProduct  = null;  /* parsed product JSON */
+  var selectedOptions = {};    /* { optionName: value } */
 
-  /* -------------------------------------------------------
+  /* ════════════════════════════════════
      OPEN POPUP
-  ------------------------------------------------------- */
-  function openPopup(productData) {
-    currentProduct = productData;
+  ════════════════════════════════════ */
+  function openPopup(data) {
+    currentProduct  = data;
     selectedOptions = {};
 
     /* Populate static fields */
-    popupImg.src    = productData.image;
-    popupImg.alt    = productData.title;
-    popupTitle.textContent = productData.title;
-    popupPrice.textContent = productData.price;
-    popupDesc.textContent  = productData.description;
+    popupImg.src              = data.image;
+    popupImg.alt              = data.title;
+    popupTitle.textContent    = data.title;
+    popupPrice.textContent    = data.price;
+    popupDesc.textContent     = data.description;
 
-    /* Build variant selectors */
-    buildVariantSelectors(productData);
+    /* Rebuild variant selectors */
+    buildSelectors(data);
 
-    /* Hide previous feedback */
-    feedback.hidden = true;
-    feedback.textContent = '';
+    /* Reset feedback */
+    hideFeedback();
+    atcBtn.disabled = false;
 
-    /* Show overlay with animation */
-    overlay.hidden = false;
-    /* Use rAF so the transition fires after display */
+    /* Show overlay */
+    overlay.hidden    = false;
+    overlay.setAttribute('aria-hidden', 'false');
+    /* rAF so the CSS transition fires after display:flex */
     requestAnimationFrame(function () {
-      overlay.classList.add('is-visible');
+      overlay.classList.add('is-open');
     });
 
-    /* Prevent body scroll */
+    /* Trap scroll */
     document.body.style.overflow = 'hidden';
+
+    /* Focus close button for accessibility */
+    closeBtn.focus();
   }
 
-  /* -------------------------------------------------------
+  /* ════════════════════════════════════
      CLOSE POPUP
-  ------------------------------------------------------- */
+  ════════════════════════════════════ */
   function closePopup() {
-    overlay.classList.remove('is-visible');
-    /* Wait for CSS transition to finish before hiding */
-    overlay.addEventListener('transitionend', function handler() {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+
+    /* Wait for CSS fade-out before hiding from DOM */
+    overlay.addEventListener('transitionend', function onEnd() {
+      overlay.removeEventListener('transitionend', onEnd);
       overlay.hidden = true;
-      overlay.removeEventListener('transitionend', handler);
     });
+
     document.body.style.overflow = '';
   }
 
-  /* -------------------------------------------------------
+  /* ════════════════════════════════════
      BUILD VARIANT SELECTORS
-     Renders a chip group for the first option (e.g. Color)
-     and a <select> dropdown for the second (e.g. Size).
-  ------------------------------------------------------- */
-  function buildVariantSelectors(productData) {
+     • First option → chip button row
+     • All subsequent options → <select> dropdown
+  ════════════════════════════════════ */
+  function buildSelectors(data) {
     variantsEl.innerHTML = '';
 
-    if (!productData.options || productData.options.length === 0) return;
+    if (!data.options || data.options.length === 0) return;
 
-    productData.options.forEach(function (option, index) {
+    data.options.forEach(function (option, index) {
       var group = document.createElement('div');
-      group.className = 'tisso-option__group';
+      group.className = 'tv-option__group';
 
+      /* Label */
       var label = document.createElement('div');
-      label.className = 'tisso-option__label';
+      label.className   = 'tv-option__label';
       label.textContent = option.name;
       group.appendChild(label);
 
       if (index === 0) {
-        /* First option → chip buttons */
-        var chips = document.createElement('div');
-        chips.className = 'tisso-option__chips';
+        /* ── Chip buttons for the first option (e.g. Color / Size) ── */
+        var chipRow = document.createElement('div');
+        chipRow.className = 'tv-option__chips';
 
         option.values.forEach(function (value) {
           var chip = document.createElement('button');
-          chip.className = 'tisso-chip';
-          chip.textContent = value;
-          chip.dataset.optionName  = option.name;
-          chip.dataset.optionValue = value;
+          chip.type      = 'button';
+          chip.className = 'tv-chip';
+          chip.textContent          = value;
+          chip.dataset.optionName   = option.name;
+          chip.dataset.optionValue  = value;
 
           chip.addEventListener('click', function () {
-            /* Deselect siblings */
-            chips.querySelectorAll('.tisso-chip').forEach(function (c) {
+            /* Deselect all siblings first */
+            chipRow.querySelectorAll('.tv-chip').forEach(function (c) {
               c.classList.remove('is-selected');
             });
             chip.classList.add('is-selected');
             selectedOptions[option.name] = value;
           });
 
-          chips.appendChild(chip);
+          chipRow.appendChild(chip);
         });
 
-        group.appendChild(chips);
+        group.appendChild(chipRow);
 
       } else {
-        /* Other options → dropdown */
+        /* ── Dropdown for subsequent options (e.g. Size) ── */
         var select = document.createElement('select');
-        select.className = 'tisso-option__select';
-        select.dataset.optionName = option.name;
+        select.className            = 'tv-option__select';
+        select.dataset.optionName   = option.name;
+        select.setAttribute('aria-label', option.name);
 
+        /* Placeholder */
         var placeholder = document.createElement('option');
-        placeholder.value = '';
+        placeholder.value    = '';
         placeholder.textContent = 'Choose your ' + option.name.toLowerCase();
         placeholder.disabled = true;
         placeholder.selected = true;
@@ -509,7 +598,7 @@
 
         option.values.forEach(function (value) {
           var opt = document.createElement('option');
-          opt.value = value;
+          opt.value       = value;
           opt.textContent = value;
           select.appendChild(opt);
         });
@@ -525,156 +614,169 @@
     });
   }
 
-  /* -------------------------------------------------------
-     FIND VARIANT ID from current selections
-  ------------------------------------------------------- */
-  function findMatchingVariantId() {
+  /* ════════════════════════════════════
+     FIND MATCHING VARIANT
+     Matches the user's selected options
+     against the product's variant list.
+  ════════════════════════════════════ */
+  function findVariant() {
     if (!currentProduct) return null;
 
     return currentProduct.variants.find(function (variant) {
       return variant.options.every(function (val, i) {
-        var optionName = currentProduct.options[i].name;
-        return selectedOptions[optionName] === val;
+        var optName = currentProduct.options[i].name;
+        return selectedOptions[optName] === val;
       });
     });
   }
 
-  /* -------------------------------------------------------
-     ADD ITEM TO CART via Shopify AJAX API
-  ------------------------------------------------------- */
-  function addToCart(variantId, quantity) {
+  /* ════════════════════════════════════
+     SHOPIFY AJAX — ADD TO CART
+  ════════════════════════════════════ */
+  function ajaxAddToCart(variantId, qty) {
     return fetch('/cart/add.js', {
-      method: 'POST',
+      method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: variantId, quantity: quantity || 1 })
+      body   : JSON.stringify({ id: variantId, quantity: qty || 1 })
     }).then(function (res) {
-      if (!res.ok) throw new Error('Cart add failed');
+      if (!res.ok) {
+        return res.json().then(function (err) {
+          throw new Error(err.description || 'Add to cart failed.');
+        });
+      }
       return res.json();
     });
   }
 
-  /* -------------------------------------------------------
-     FETCH PRODUCT BY HANDLE (for special jacket)
-  ------------------------------------------------------- */
-  function fetchProductByHandle(handle) {
+  /* Fetch a product by handle, return its first available variant id */
+  function getFirstAvailableVariantId(handle) {
     return fetch('/products/' + handle + '.js')
       .then(function (res) {
         if (!res.ok) throw new Error('Product not found: ' + handle);
         return res.json();
+      })
+      .then(function (product) {
+        var v = product.variants.find(function (variant) {
+          return variant.available;
+        });
+        return v ? v.id : null;
       });
   }
 
-  /* -------------------------------------------------------
+  /* Refresh cart count bubble if theme exposes one */
+  function refreshCartCount() {
+    fetch('/cart.js')
+      .then(function (r) { return r.json(); })
+      .then(function (cart) {
+        var el = document.querySelector(
+          '.cart-count-bubble, [data-cart-count], .header__cart-count'
+        );
+        if (el) el.textContent = cart.item_count;
+      })
+      .catch(function () { /* non-critical */ });
+  }
+
+  /* ════════════════════════════════════
      ADD TO CART CLICK HANDLER
-  ------------------------------------------------------- */
+  ════════════════════════════════════ */
   atcBtn.addEventListener('click', function () {
     if (!currentProduct) return;
 
-    /* Validate all options are selected */
-    var allSelected = currentProduct.options.every(function (option) {
-      return selectedOptions[option.name];
+    /* 1. Validate — all options must be chosen */
+    var allChosen = currentProduct.options.every(function (opt) {
+      return Boolean(selectedOptions[opt.name]);
     });
 
-    if (!allSelected) {
+    if (!allChosen) {
       showFeedback('Please select all options before adding to cart.', 'error');
       return;
     }
 
-    var matchedVariant = findMatchingVariantId();
-    if (!matchedVariant) {
+    /* 2. Find matching variant */
+    var variant = findVariant();
+    if (!variant) {
       showFeedback('This combination is unavailable.', 'error');
       return;
     }
-    if (!matchedVariant.available) {
-      showFeedback('This variant is sold out.', 'error');
+    if (!variant.available) {
+      showFeedback('Sorry, this variant is sold out.', 'error');
       return;
     }
 
-    /* Disable button during request */
+    /* 3. Determine if special jacket rule applies:
+          Color = Black  AND  Size = Medium */
+    var addJacket = (
+      selectedOptions['Color'] === 'Black' &&
+      selectedOptions['Size']  === 'Medium'
+    );
+
+    /* 4. Disable button while requests are in flight */
     atcBtn.disabled = true;
 
-    /* ── Special rule check ──
-       If Color=Black AND Size=Medium are both selected,
-       also add "Soft Winter Jacket" to the cart. */
-    var isBlack  = selectedOptions['Color'] === 'Black';
-    var isMedium = selectedOptions['Size']  === 'Medium';
-    var shouldAddJacket = isBlack && isMedium;
+    /* 5. Build promise chain */
+    var addPromises = [ ajaxAddToCart(variant.id, 1) ];
 
-    /* Build array of add-to-cart promises */
-    var addPromises = [addToCart(matchedVariant.id, 1)];
-
-    if (shouldAddJacket) {
-      var jacketPromise = fetchProductByHandle(SPECIAL_JACKET_HANDLE)
-        .then(function (jacketProduct) {
-          /* Add first available variant of the jacket */
-          var availableVariant = jacketProduct.variants.find(function (v) {
-            return v.available;
-          });
-          if (availableVariant) {
-            return addToCart(availableVariant.id, 1);
+    if (addJacket) {
+      var jacketPromise = getFirstAvailableVariantId(JACKET_HANDLE)
+        .then(function (jacketVariantId) {
+          if (jacketVariantId) {
+            return ajaxAddToCart(jacketVariantId, 1);
           }
         })
-        .catch(function () {
-          /* Silently fail if jacket not found – don't block main add */
+        .catch(function (err) {
+          /* Log but don't block the main add */
+          console.warn('Could not auto-add jacket:', err.message);
         });
+
       addPromises.push(jacketPromise);
     }
 
+    /* 6. Execute */
     Promise.all(addPromises)
       .then(function () {
         var msg = 'Added to cart!';
-        if (shouldAddJacket) {
-          msg += ' Soft Winter Jacket also added.';
-        }
+        if (addJacket) msg += ' Soft Winter Jacket also added.';
         showFeedback(msg, 'success');
-        /* Optionally update cart count bubble if theme exposes it */
-        updateCartCount();
+        refreshCartCount();
       })
       .catch(function (err) {
-        showFeedback('Could not add to cart. Please try again.', 'error');
-        console.error('ATC error:', err);
+        showFeedback(err.message || 'Could not add to cart. Please try again.', 'error');
+        console.error('Add to cart error:', err);
       })
       .finally(function () {
         atcBtn.disabled = false;
       });
   });
 
-  /* -------------------------------------------------------
-     HELPERS
-  ------------------------------------------------------- */
+  /* ════════════════════════════════════
+     FEEDBACK HELPERS
+  ════════════════════════════════════ */
   function showFeedback(msg, type) {
-    feedback.textContent = msg;
-    feedback.style.color = type === 'error' ? '#c00' : 'green';
-    feedback.hidden = false;
+    feedbackEl.textContent  = msg;
+    feedbackEl.style.color  = type === 'error' ? '#c0392b' : '#27ae60';
+    feedbackEl.hidden       = false;
+  }
+  function hideFeedback() {
+    feedbackEl.hidden      = true;
+    feedbackEl.textContent = '';
   }
 
-  function updateCartCount() {
-    /* Refresh cart count if the theme has a cart bubble element */
-    fetch('/cart.js')
-      .then(function (r) { return r.json(); })
-      .then(function (cart) {
-        var bubble = document.querySelector('.cart-count-bubble, [data-cart-count]');
-        if (bubble) {
-          bubble.textContent = cart.item_count;
-        }
-      })
-      .catch(function () {});
-  }
-
-  /* -------------------------------------------------------
-     ATTACH OPEN LISTENERS to all "+" hotspot buttons
-  ------------------------------------------------------- */
-  document.querySelectorAll('.tisso-grid__hotspot').forEach(function (btn) {
+  /* ════════════════════════════════════
+     ATTACH HOTSPOT LISTENERS
+  ════════════════════════════════════ */
+  document.querySelectorAll('.tv-grid__hotspot').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var productId  = btn.dataset.productId;
-      var jsonScript = document.querySelector('[data-product-json="' + productId + '"]');
-      if (!jsonScript) return;
+      var dataScript = document.querySelector(
+        '.tv-product-data[data-product-id="' + productId + '"]'
+      );
+      if (!dataScript) return;
 
       var productData;
       try {
-        productData = JSON.parse(jsonScript.textContent);
+        productData = JSON.parse(dataScript.textContent);
       } catch (e) {
-        console.error('Failed to parse product JSON', e);
+        console.error('Failed to parse product data:', e);
         return;
       }
 
@@ -682,15 +784,14 @@
     });
   });
 
-  /* Close on "×" click */
+  /* ── Close events ── */
   closeBtn.addEventListener('click', closePopup);
 
-  /* Close on overlay backdrop click */
   overlay.addEventListener('click', function (e) {
+    /* Close only if the backdrop itself was clicked, not the card */
     if (e.target === overlay) closePopup();
   });
 
-  /* Close on Escape key */
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && !overlay.hidden) closePopup();
   });
@@ -698,12 +799,13 @@
 }());
 </script>
 
-{% comment %} ── SCHEMA ── {% endcomment %}
+
+{%- comment %} ════════════════ SCHEMA ════════════════ {% endcomment %}
 {% schema %}
 {
   "name": "Tisso Product Grid",
   "tag": "section",
-  "class": "section",
+  "class": "tisso-grid-section",
   "max_blocks": 6,
   "settings": [
     {

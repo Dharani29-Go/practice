@@ -1,248 +1,281 @@
 {% comment %}
-  ============================================================
-  TISSO VISON - Banner Section
-  File: sections/tisso-banner.liquid
-  Description: Hero banner with editable text fields,
-               animated buttons, and background illustration.
-  ============================================================
+================================================================================
+  TISSO VISON — Banner Section
+  File   : sections/tisso-banner.liquid
+  Purpose: Full-width hero banner with:
+             • Top navigation bar (logo, tagline, CTA button)
+             • Background illustration image
+             • Editable heading, subtext, and "Shop Now" CTA
+             • Bottom ticker text
+  All text fields are editable from the Shopify Theme Customizer.
+  No jQuery — vanilla JS only (no JS needed for this section).
+================================================================================
 {% endcomment %}
 
-<section class="tisso-banner" id="tisso-banner-{{ section.id }}">
+<section
+  class="tv-banner"
+  id="tv-banner-{{ section.id }}"
+  aria-label="Hero Banner"
+>
 
-  <!-- ── TOP NAV BAR ── -->
-  <div class="tisso-banner__nav">
-    <div class="tisso-banner__logo">{{ section.settings.logo_text }}</div>
-    <div class="tisso-banner__tagline">{{ section.settings.nav_tagline }}</div>
-    <a href="{{ section.settings.choose_gift_url }}" class="tisso-banner__cta-nav tisso-btn--animate">
+  {%- comment %} ── 1. TOP NAVIGATION BAR ── {% endcomment %}
+  <nav class="tv-banner__nav" role="navigation" aria-label="Site navigation">
+
+    <span class="tv-banner__logo">
+      {{ section.settings.logo_text }}
+    </span>
+
+    <span class="tv-banner__nav-tagline">
+      {{ section.settings.nav_tagline }}
+    </span>
+
+    <a
+      href="{{ section.settings.choose_gift_url }}"
+      class="tv-btn tv-btn--yellow"
+      aria-label="{{ section.settings.choose_gift_label }}"
+    >
       {{ section.settings.choose_gift_label }}
-      <span class="tisso-arrow">&#8594;</span>
+      <span class="tv-btn__arrow" aria-hidden="true">&#8594;</span>
     </a>
-  </div>
 
-  <!-- ── HERO CONTENT ── -->
-  <div class="tisso-banner__hero">
+  </nav>
 
-    <!-- Background illustration image -->
-    {% if section.settings.background_image != blank %}
-      <div class="tisso-banner__bg-image">
-        {{ section.settings.background_image | image_url: width: 1600 | image_tag: loading: 'eager', alt: 'Banner background' }}
+  {%- comment %} ── 2. HERO AREA ── {% endcomment %}
+  <div class="tv-banner__hero">
+
+    {%- comment %} Background illustration image (right side) {% endcomment %}
+    {%- if section.settings.background_image != blank %}
+      <div class="tv-banner__bg" aria-hidden="true">
+        {{
+          section.settings.background_image
+          | image_url: width: 1600
+          | image_tag:
+            loading: 'eager',
+            fetchpriority: 'high',
+            alt: '',
+            class: 'tv-banner__bg-img'
+        }}
       </div>
-    {% endif %}
+    {%- endif %}
 
-    <!-- Overlay text content (bottom-left) -->
-    <div class="tisso-banner__content">
-      <h1 class="tisso-banner__heading">{{ section.settings.heading }}</h1>
-      <p class="tisso-banner__description">{{ section.settings.description }}</p>
-      <a href="{{ section.settings.shop_now_url }}" class="tisso-banner__cta-main tisso-btn--animate">
+    {%- comment %} Text content — overlays bottom-left of hero {% endcomment %}
+    <div class="tv-banner__content">
+      <h1 class="tv-banner__heading">{{ section.settings.heading }}</h1>
+      <p  class="tv-banner__description">{{ section.settings.description }}</p>
+      <a
+        href="{{ section.settings.shop_now_url }}"
+        class="tv-btn tv-btn--black"
+        aria-label="{{ section.settings.shop_now_label }}"
+      >
         {{ section.settings.shop_now_label }}
-        <span class="tisso-arrow">&#8594;</span>
+        <span class="tv-btn__arrow" aria-hidden="true">&#8594;</span>
       </a>
     </div>
 
   </div>
 
-  <!-- ── BOTTOM TICKER ── -->
-  <div class="tisso-banner__ticker">
-    <span>{{ section.settings.ticker_text }}</span>
+  {%- comment %} ── 3. BOTTOM TICKER BAR ── {% endcomment %}
+  <div class="tv-banner__ticker" aria-label="Store message">
+    <p>{{ section.settings.ticker_text }}</p>
   </div>
 
 </section>
 
-{% comment %} ── STYLES ── {% endcomment %}
+
+{%- comment %} ════════════════ STYLES ════════════════ {% endcomment %}
 <style>
-  /* ---- Root variables scoped to this section ---- */
-  #tisso-banner-{{ section.id }} {
-    --font-heading: 'Georgia', serif;
-    --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    --color-black: #000;
-    --color-white: #fff;
-    --color-yellow: #f5e642;
-    --color-gray-light: #f4f4f4;
-    --transition-speed: 0.3s;
+  /* ─── CSS custom properties (scoped to this section) ─── */
+  #tv-banner-{{ section.id }} {
+    --tv-font-serif  : 'Georgia', 'Times New Roman', serif;
+    --tv-font-sans   : 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --tv-black       : #000000;
+    --tv-white       : #ffffff;
+    --tv-yellow      : #f5e63e;
+    --tv-yellow-hover: #e0d100;
+    --tv-gray-bg     : #f2f2f2;
+    --tv-border      : #e2e2e2;
+    --tv-speed       : 0.28s;
   }
 
-  /* ---- Section wrapper ---- */
-  .tisso-banner {
-    font-family: var(--font-body);
-    background-color: var(--color-white);
-    border-bottom: 1px solid #e0e0e0;
+  /* ─── Section wrapper ─── */
+  .tv-banner {
+    font-family : var(--tv-font-sans);
+    background  : var(--tv-white);
+    border-bottom: 1px solid var(--tv-border);
   }
 
-  /* ---- Nav bar ---- */
-  .tisso-banner__nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 40px;
-    border-bottom: 1px solid #e5e5e5;
-    background: var(--color-white);
-    position: relative;
-    z-index: 10;
+  /* ─── Navigation bar ─── */
+  .tv-banner__nav {
+    display         : flex;
+    align-items     : center;
+    justify-content : space-between;
+    padding         : 14px 40px;
+    border-bottom   : 1px solid var(--tv-border);
+    background      : var(--tv-white);
+    position        : relative;
+    z-index         : 10;
   }
 
-  .tisso-banner__logo {
-    font-weight: 700;
-    font-size: 1.1rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+  .tv-banner__logo {
+    font-weight    : 700;
+    font-size      : 1.05rem;
+    letter-spacing : 0.06em;
+    text-transform : uppercase;
+    color          : var(--tv-black);
   }
 
-  .tisso-banner__tagline {
-    font-size: 0.9rem;
-    color: #444;
+  .tv-banner__nav-tagline {
+    font-size : 0.88rem;
+    color     : #444;
   }
 
-  /* ---- Animated CTA buttons ---- */
-  .tisso-btn--animate {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 22px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+  /* ─── Button base ─── */
+  .tv-btn {
+    display       : inline-flex;
+    align-items   : center;
+    gap           : 10px;
+    padding       : 11px 20px;
+    font-family   : var(--tv-font-sans);
+    font-size     : 0.8rem;
+    font-weight   : 700;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     text-decoration: none;
-    cursor: pointer;
-    border: none;
-    position: relative;
-    overflow: hidden;
-    transition: color var(--transition-speed) ease,
-                background-color var(--transition-speed) ease;
+    border        : none;
+    cursor        : pointer;
+    transition    : background-color var(--tv-speed) ease,
+                    color var(--tv-speed) ease;
   }
 
-  /* Nav CTA: yellow background */
-  .tisso-banner__cta-nav {
-    background-color: var(--color-yellow);
-    color: var(--color-black);
+  /* Arrow slide animation */
+  .tv-btn__arrow {
+    display   : inline-block;
+    transition: transform var(--tv-speed) ease;
   }
-  .tisso-banner__cta-nav:hover {
-    background-color: #e0d100;
-  }
-
-  /* Main CTA: black background */
-  .tisso-banner__cta-main {
-    background-color: var(--color-black);
-    color: var(--color-white);
-  }
-  .tisso-banner__cta-main:hover {
-    background-color: #333;
+  .tv-btn:hover .tv-btn__arrow {
+    transform: translateX(5px);
   }
 
-  /* Arrow slide animation on hover */
-  .tisso-btn--animate .tisso-arrow {
-    display: inline-block;
-    transition: transform var(--transition-speed) ease;
+  /* Yellow variant (nav CTA) */
+  .tv-btn--yellow {
+    background-color: var(--tv-yellow);
+    color           : var(--tv-black);
   }
-  .tisso-btn--animate:hover .tisso-arrow {
-    transform: translateX(6px);
+  .tv-btn--yellow:hover {
+    background-color: var(--tv-yellow-hover);
   }
 
-  /* ---- Hero area ---- */
-  .tisso-banner__hero {
-    position: relative;
+  /* Black variant (hero CTA) */
+  .tv-btn--black {
+    background-color: var(--tv-black);
+    color           : var(--tv-white);
+  }
+  .tv-btn--black:hover {
+    background-color: #222;
+  }
+
+  /* ─── Hero area ─── */
+  .tv-banner__hero {
+    position  : relative;
     min-height: 480px;
-    overflow: hidden;
-    background-color: var(--color-white);
+    overflow  : hidden;
+    display   : flex;
+    align-items: flex-end; /* text anchors to bottom-left */
+    background: var(--tv-white);
   }
 
-  /* Background illustration fills the right side */
-  .tisso-banner__bg-image {
+  /* Background illustration fills the right/full area */
+  .tv-banner__bg {
     position: absolute;
-    top: 0; right: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
+    inset   : 0;
+    z-index : 0;
   }
-  .tisso-banner__bg-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .tv-banner__bg-img {
+    width        : 100%;
+    height       : 100%;
+    object-fit   : cover;
     object-position: right center;
-    opacity: 0.85;
+    display      : block;
   }
 
-  /* Text content - bottom left overlay */
-  .tisso-banner__content {
-    position: relative;
-    z-index: 2;
-    padding: 40px 40px 50px;
-    max-width: 420px;
-    display: flex;
+  /* Text content — left side, above the illustration */
+  .tv-banner__content {
+    position      : relative;
+    z-index       : 2;
+    padding       : 40px 40px 50px;
+    max-width     : 440px;
+    display       : flex;
     flex-direction: column;
-    gap: 18px;
-    /* Push to bottom of hero */
-    margin-top: auto;
+    gap           : 18px;
   }
 
-  /* Ensure hero uses flex so content can sit at bottom */
-  .tisso-banner__hero {
-    display: flex;
-    align-items: flex-end;
-  }
-
-  .tisso-banner__heading {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 4vw, 3.2rem);
+  .tv-banner__heading {
+    font-family: var(--tv-font-serif);
+    font-size  : clamp(2rem, 4vw, 3.2rem);
     font-weight: 700;
     line-height: 1.1;
-    margin: 0;
-    color: var(--color-black);
+    margin     : 0;
+    color      : var(--tv-black);
   }
 
-  .tisso-banner__description {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: #222;
-    margin: 0;
+  .tv-banner__description {
+    font-size  : 0.92rem;
+    line-height: 1.65;
+    color      : #222;
+    margin     : 0;
   }
 
-  /* ---- Ticker bar ---- */
-  .tisso-banner__ticker {
-    background-color: var(--color-gray-light);
-    padding: 10px 40px;
-    text-align: center;
-    font-size: 0.75rem;
-    letter-spacing: 0.15em;
+  /* ─── Ticker bar ─── */
+  .tv-banner__ticker {
+    background  : var(--tv-gray-bg);
+    padding     : 10px 40px;
+    text-align  : center;
+    border-top  : 1px solid var(--tv-border);
+  }
+  .tv-banner__ticker p {
+    margin        : 0;
+    font-size     : 0.72rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #333;
-    border-top: 1px solid #e0e0e0;
+    color         : #333;
   }
 
-  /* ---- Mobile ---- */
+  /* ─── Mobile (≤ 768px) ─── */
   @media (max-width: 768px) {
-    .tisso-banner__nav {
+    .tv-banner__nav {
       padding: 12px 20px;
     }
-    .tisso-banner__tagline {
-      display: none; /* hide on small screens */
+    /* Hide tagline on small screens to avoid crowding */
+    .tv-banner__nav-tagline {
+      display: none;
     }
-    .tisso-banner__hero {
-      min-height: 380px;
+    .tv-banner__hero {
+      min-height: 360px;
     }
-    .tisso-banner__content {
-      padding: 24px 20px 36px;
+    .tv-banner__content {
+      padding  : 24px 20px 36px;
       max-width: 100%;
     }
-    .tisso-banner__heading {
+    .tv-banner__heading {
       font-size: 2rem;
     }
-    .tisso-banner__cta-nav {
-      font-size: 0.75rem;
-      padding: 10px 14px;
+    .tv-btn--yellow {
+      font-size: 0.72rem;
+      padding  : 9px 14px;
     }
-    .tisso-banner__ticker {
+    .tv-banner__ticker {
       padding: 10px 20px;
     }
   }
 </style>
 
-{% comment %} ── SCHEMA (Customizer settings) ── {% endcomment %}
+
+{%- comment %} ════════════════ SCHEMA ════════════════ {% endcomment %}
 {% schema %}
 {
   "name": "Tisso Banner",
   "tag": "section",
-  "class": "section",
+  "class": "tisso-banner-section",
   "settings": [
     {
       "type": "header",
@@ -257,19 +290,19 @@
     {
       "type": "text",
       "id": "nav_tagline",
-      "label": "Nav Tagline",
+      "label": "Navigation Tagline",
       "default": "Find the ideal gift for your loved ones."
     },
     {
       "type": "text",
       "id": "choose_gift_label",
-      "label": "Choose Gift Button Label",
+      "label": "\"Choose Gift\" Button Label",
       "default": "CHOOSE GIFT"
     },
     {
       "type": "url",
       "id": "choose_gift_url",
-      "label": "Choose Gift Button URL"
+      "label": "\"Choose Gift\" Button URL"
     },
     {
       "type": "header",
@@ -278,7 +311,8 @@
     {
       "type": "image_picker",
       "id": "background_image",
-      "label": "Background Illustration Image"
+      "label": "Background Illustration Image",
+      "info": "Upload the line-art gift guide illustration. Recommended width: 1600px."
     },
     {
       "type": "text",
@@ -289,19 +323,19 @@
     {
       "type": "textarea",
       "id": "description",
-      "label": "Description",
+      "label": "Description Text",
       "default": "Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season."
     },
     {
       "type": "text",
       "id": "shop_now_label",
-      "label": "Shop Now Button Label",
+      "label": "\"Shop Now\" Button Label",
       "default": "SHOP NOW"
     },
     {
       "type": "url",
       "id": "shop_now_url",
-      "label": "Shop Now Button URL"
+      "label": "\"Shop Now\" Button URL"
     },
     {
       "type": "header",
