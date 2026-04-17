@@ -1,0 +1,321 @@
+{% comment %}
+  ============================================================
+  Section: Custom Banner
+  Description: Hero banner section with editable text fields
+                and animated CTA buttons. All text is editable
+                via the Shopify Theme Customizer.
+  Author: Dharani Karthikeyan
+  ============================================================
+{% endcomment %}
+
+<section class="custom-banner" id="custom-banner-{{ section.id }}">
+  <div class="custom-banner__inner">
+
+    {% comment %} Subtitle / eyebrow text {% endcomment %}
+    {% if section.settings.subtitle != blank %}
+      <p class="custom-banner__subtitle">{{ section.settings.subtitle }}</p>
+    {% endif %}
+
+    {% comment %} Main heading {% endcomment %}
+    {% if section.settings.heading != blank %}
+      <h1 class="custom-banner__heading">{{ section.settings.heading }}</h1>
+    {% endif %}
+
+    {% comment %} Body description text {% endcomment %}
+    {% if section.settings.description != blank %}
+      <p class="custom-banner__description">{{ section.settings.description }}</p>
+    {% endif %}
+
+    {% comment %} CTA Buttons row {% endcomment %}
+    <div class="custom-banner__buttons">
+
+      {% comment %} Primary button {% endcomment %}
+      {% if section.settings.btn_primary_label != blank %}
+        <a
+          href="{{ section.settings.btn_primary_url }}"
+          class="custom-banner__btn custom-banner__btn--primary"
+        >
+          {{ section.settings.btn_primary_label }}
+        </a>
+      {% endif %}
+
+      {% comment %} Secondary button {% endcomment %}
+      {% if section.settings.btn_secondary_label != blank %}
+        <a
+          href="{{ section.settings.btn_secondary_url }}"
+          class="custom-banner__btn custom-banner__btn--secondary"
+        >
+          {{ section.settings.btn_secondary_label }}
+        </a>
+      {% endif %}
+
+    </div><!-- /.custom-banner__buttons -->
+
+  </div><!-- /.custom-banner__inner -->
+</section><!-- /.custom-banner -->
+
+{% comment %} ── Scoped Styles ── {% endcomment %}
+<style>
+  /* ── Banner wrapper ── */
+  .custom-banner {
+    background-color: {{ section.settings.bg_color }};
+    padding: 80px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .custom-banner__inner {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* ── Subtitle ── */
+  .custom-banner__subtitle {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: {{ section.settings.accent_color }};
+    margin-bottom: 16px;
+  }
+
+  /* ── Heading ── */
+  .custom-banner__heading {
+    font-size: clamp(32px, 5vw, 64px);
+    font-weight: 800;
+    line-height: 1.15;
+    color: {{ section.settings.text_color }};
+    margin: 0 0 20px;
+  }
+
+  /* ── Description ── */
+  .custom-banner__description {
+    font-size: 18px;
+    line-height: 1.7;
+    color: {{ section.settings.text_color }};
+    opacity: 0.8;
+    margin-bottom: 40px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── Buttons row ── */
+  .custom-banner__buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Shared button base ── */
+  .custom-banner__btn {
+    display: inline-block;
+    padding: 16px 36px;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    /* Smooth transition for hover + ripple */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  /* ── Primary button ── */
+  .custom-banner__btn--primary {
+    background-color: {{ section.settings.accent_color }};
+    color: #ffffff;
+    border: 2px solid {{ section.settings.accent_color }};
+  }
+
+  .custom-banner__btn--primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+
+  /* ── Secondary button (outline style) ── */
+  .custom-banner__btn--secondary {
+    background-color: transparent;
+    color: {{ section.settings.text_color }};
+    border: 2px solid {{ section.settings.text_color }};
+  }
+
+  .custom-banner__btn--secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    background-color: {{ section.settings.text_color }};
+    color: {{ section.settings.bg_color }};
+  }
+
+  /* ── Ripple animation element ── */
+  .custom-banner__btn .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(0);
+    animation: rippleEffect 0.6s linear;
+    pointer-events: none;
+  }
+
+  @keyframes rippleEffect {
+    to {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  /* ── Mobile breakpoint ── */
+  @media (max-width: 768px) {
+    .custom-banner {
+      padding: 60px 16px;
+    }
+
+    .custom-banner__buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .custom-banner__btn {
+      text-align: center;
+    }
+  }
+</style>
+
+{% comment %} ── Button Ripple Animation Script ── {% endcomment %}
+<script>
+  /**
+   * Adds a ripple (ink-spread) click animation to all banner buttons.
+   * Works with vanilla JS only – no jQuery.
+   */
+  (function () {
+    'use strict';
+
+    /**
+     * Creates and animates a ripple element inside a button on click.
+     * @param {MouseEvent} event - The click event triggered on a button.
+     */
+    function createRipple(event) {
+      var button = event.currentTarget;
+      var rect   = button.getBoundingClientRect();
+
+      // Size the ripple to cover the whole button diagonally
+      var diameter = Math.max(button.clientWidth, button.clientHeight);
+      var radius   = diameter / 2;
+
+      var ripple        = document.createElement('span');
+      ripple.classList.add('ripple');
+      ripple.style.width  = ripple.style.height = diameter + 'px';
+      ripple.style.left   = (event.clientX - rect.left - radius) + 'px';
+      ripple.style.top    = (event.clientY - rect.top  - radius) + 'px';
+
+      // Remove any existing ripple before adding a new one
+      var existing = button.querySelector('.ripple');
+      if (existing) existing.remove();
+
+      button.appendChild(ripple);
+    }
+
+    // Attach click listener to every banner button in this section
+    document.querySelectorAll('.custom-banner__btn').forEach(function (btn) {
+      btn.addEventListener('click', createRipple);
+    });
+  })();
+</script>
+
+{% comment %} ══════════════════════════════════════════════
+  Schema – controls what appears in the Customizer sidebar
+════════════════════════════════════════════════════════ {% endcomment %}
+{% schema %}
+{
+  "name": "Custom Banner",
+  "tag": "section",
+  "class": "custom-banner-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subtitle / Eyebrow",
+      "default": "New Collection"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Main Heading",
+      "default": "Discover Our Latest Styles"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Explore our curated selection of premium products, designed for the modern lifestyle."
+    },
+    {
+      "type": "header",
+      "content": "Primary Button"
+    },
+    {
+      "type": "text",
+      "id": "btn_primary_label",
+      "label": "Button Label",
+      "default": "Shop Now"
+    },
+    {
+      "type": "url",
+      "id": "btn_primary_url",
+      "label": "Button URL"
+    },
+    {
+      "type": "header",
+      "content": "Secondary Button"
+    },
+    {
+      "type": "text",
+      "id": "btn_secondary_label",
+      "label": "Button Label",
+      "default": "Learn More"
+    },
+    {
+      "type": "url",
+      "id": "btn_secondary_url",
+      "label": "Button URL"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background Color",
+      "default": "#0a0a0a"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent / Button Color",
+      "default": "#e63946"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Banner"
+    }
+  ]
+}
+{% endschema %}
