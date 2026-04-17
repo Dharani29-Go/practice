@@ -1,0 +1,323 @@
+{% comment %}
+  ============================================================
+  TISSO VISON - Banner Section
+  File: sections/tisso-banner.liquid
+  Description: Hero banner with editable text fields,
+               animated buttons, and background illustration.
+  ============================================================
+{% endcomment %}
+
+<section class="tisso-banner" id="tisso-banner-{{ section.id }}">
+
+  <!-- ── TOP NAV BAR ── -->
+  <div class="tisso-banner__nav">
+    <div class="tisso-banner__logo">{{ section.settings.logo_text }}</div>
+    <div class="tisso-banner__tagline">{{ section.settings.nav_tagline }}</div>
+    <a href="{{ section.settings.choose_gift_url }}" class="tisso-banner__cta-nav tisso-btn--animate">
+      {{ section.settings.choose_gift_label }}
+      <span class="tisso-arrow">&#8594;</span>
+    </a>
+  </div>
+
+  <!-- ── HERO CONTENT ── -->
+  <div class="tisso-banner__hero">
+
+    <!-- Background illustration image -->
+    {% if section.settings.background_image != blank %}
+      <div class="tisso-banner__bg-image">
+        {{ section.settings.background_image | image_url: width: 1600 | image_tag: loading: 'eager', alt: 'Banner background' }}
+      </div>
+    {% endif %}
+
+    <!-- Overlay text content (bottom-left) -->
+    <div class="tisso-banner__content">
+      <h1 class="tisso-banner__heading">{{ section.settings.heading }}</h1>
+      <p class="tisso-banner__description">{{ section.settings.description }}</p>
+      <a href="{{ section.settings.shop_now_url }}" class="tisso-banner__cta-main tisso-btn--animate">
+        {{ section.settings.shop_now_label }}
+        <span class="tisso-arrow">&#8594;</span>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- ── BOTTOM TICKER ── -->
+  <div class="tisso-banner__ticker">
+    <span>{{ section.settings.ticker_text }}</span>
+  </div>
+
+</section>
+
+{% comment %} ── STYLES ── {% endcomment %}
+<style>
+  /* ---- Root variables scoped to this section ---- */
+  #tisso-banner-{{ section.id }} {
+    --font-heading: 'Georgia', serif;
+    --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --color-black: #000;
+    --color-white: #fff;
+    --color-yellow: #f5e642;
+    --color-gray-light: #f4f4f4;
+    --transition-speed: 0.3s;
+  }
+
+  /* ---- Section wrapper ---- */
+  .tisso-banner {
+    font-family: var(--font-body);
+    background-color: var(--color-white);
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  /* ---- Nav bar ---- */
+  .tisso-banner__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 40px;
+    border-bottom: 1px solid #e5e5e5;
+    background: var(--color-white);
+    position: relative;
+    z-index: 10;
+  }
+
+  .tisso-banner__logo {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .tisso-banner__tagline {
+    font-size: 0.9rem;
+    color: #444;
+  }
+
+  /* ---- Animated CTA buttons ---- */
+  .tisso-btn--animate {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 22px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    transition: color var(--transition-speed) ease,
+                background-color var(--transition-speed) ease;
+  }
+
+  /* Nav CTA: yellow background */
+  .tisso-banner__cta-nav {
+    background-color: var(--color-yellow);
+    color: var(--color-black);
+  }
+  .tisso-banner__cta-nav:hover {
+    background-color: #e0d100;
+  }
+
+  /* Main CTA: black background */
+  .tisso-banner__cta-main {
+    background-color: var(--color-black);
+    color: var(--color-white);
+  }
+  .tisso-banner__cta-main:hover {
+    background-color: #333;
+  }
+
+  /* Arrow slide animation on hover */
+  .tisso-btn--animate .tisso-arrow {
+    display: inline-block;
+    transition: transform var(--transition-speed) ease;
+  }
+  .tisso-btn--animate:hover .tisso-arrow {
+    transform: translateX(6px);
+  }
+
+  /* ---- Hero area ---- */
+  .tisso-banner__hero {
+    position: relative;
+    min-height: 480px;
+    overflow: hidden;
+    background-color: var(--color-white);
+  }
+
+  /* Background illustration fills the right side */
+  .tisso-banner__bg-image {
+    position: absolute;
+    top: 0; right: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+  .tisso-banner__bg-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: right center;
+    opacity: 0.85;
+  }
+
+  /* Text content - bottom left overlay */
+  .tisso-banner__content {
+    position: relative;
+    z-index: 2;
+    padding: 40px 40px 50px;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    /* Push to bottom of hero */
+    margin-top: auto;
+  }
+
+  /* Ensure hero uses flex so content can sit at bottom */
+  .tisso-banner__hero {
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .tisso-banner__heading {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0;
+    color: var(--color-black);
+  }
+
+  .tisso-banner__description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #222;
+    margin: 0;
+  }
+
+  /* ---- Ticker bar ---- */
+  .tisso-banner__ticker {
+    background-color: var(--color-gray-light);
+    padding: 10px 40px;
+    text-align: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #333;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  /* ---- Mobile ---- */
+  @media (max-width: 768px) {
+    .tisso-banner__nav {
+      padding: 12px 20px;
+    }
+    .tisso-banner__tagline {
+      display: none; /* hide on small screens */
+    }
+    .tisso-banner__hero {
+      min-height: 380px;
+    }
+    .tisso-banner__content {
+      padding: 24px 20px 36px;
+      max-width: 100%;
+    }
+    .tisso-banner__heading {
+      font-size: 2rem;
+    }
+    .tisso-banner__cta-nav {
+      font-size: 0.75rem;
+      padding: 10px 14px;
+    }
+    .tisso-banner__ticker {
+      padding: 10px 20px;
+    }
+  }
+</style>
+
+{% comment %} ── SCHEMA (Customizer settings) ── {% endcomment %}
+{% schema %}
+{
+  "name": "Tisso Banner",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Navigation Bar"
+    },
+    {
+      "type": "text",
+      "id": "logo_text",
+      "label": "Logo Text",
+      "default": "TISSO VISON"
+    },
+    {
+      "type": "text",
+      "id": "nav_tagline",
+      "label": "Nav Tagline",
+      "default": "Find the ideal gift for your loved ones."
+    },
+    {
+      "type": "text",
+      "id": "choose_gift_label",
+      "label": "Choose Gift Button Label",
+      "default": "CHOOSE GIFT"
+    },
+    {
+      "type": "url",
+      "id": "choose_gift_url",
+      "label": "Choose Gift Button URL"
+    },
+    {
+      "type": "header",
+      "content": "Hero Content"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background Illustration Image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "The Gift Guide"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season."
+    },
+    {
+      "type": "text",
+      "id": "shop_now_label",
+      "label": "Shop Now Button Label",
+      "default": "SHOP NOW"
+    },
+    {
+      "type": "url",
+      "id": "shop_now_url",
+      "label": "Shop Now Button URL"
+    },
+    {
+      "type": "header",
+      "content": "Ticker Bar"
+    },
+    {
+      "type": "text",
+      "id": "ticker_text",
+      "label": "Ticker Text",
+      "default": "SUSTAINABLE, ETHICALLY MADE CLOTHES IN SIZES XXS TO 6XL"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Tisso Banner"
+    }
+  ]
+}
+{% endschema %}
